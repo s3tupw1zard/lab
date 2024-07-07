@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-ghost-on-kubernetes
+  namespace: ghost-on-kubernetes
+  labels:
+    app: mysql-ghost-on-kubernetes
+    app.kubernetes.io/name: mysql-ghost-on-kubernetes
+    app.kubernetes.io/instance: ghost-on-kubernetes
+    app.kubernetes.io/version: "5.8"
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: ghost-on-kubernetes
+    app.kubernetes.io/managed-by: sredevopsorg
+spec:
+  serviceName: service-mysql-ghost-on-kubernetes
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-ghost-on-kubernetes
+  template:
+    metadata:
+      labels:
+        app: mysql-ghost-on-kubernetes
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/mysql-ghost-on-kubernetes: runtime/default
+    spec:
+      initContainers:
+      - name: mysql-ghost-on-kubernetes-init
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+        image: docker.io/busybox:stable-musl
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo 'Changing ownership of mysql mount directory to 999:999'
+          chown -Rfv 999:999 /mnt/mysql || echo 'Error changing ownership of mysql mount directory to 999:999'
+          echo 'Changing ownership of tmp mount directory to 999:999'
+          chown -Rfv 999:999 /mnt/tmp || echo 'Error changing ownership of tmp mount directory to 999:999'
+          echo 'Changing ownership of socket mount directory to 999:999'
+          chown -Rfv 999:999 /mnt/var/run/mysqld || echo 'Error changing ownership of socket mount directory to 999:999'
+          
+          
+        volumeMounts:
+        - name: mysql-ghost-on-kubernetes-volume
+          mountPath: /mnt/mysql
+          subPath: mysql-empty-subdir
+          readOnly: false
+
+        - name: mysql-ghost-on-kubernetes-tmp
+          mountPath: /mnt/tmp
+          readOnly: false
+
+        - name: mysql-ghost-on-kubernetes-socket
+          mountPath: /mnt/var/run/mysqld
+          readOnly: false
+        
+        # YOu can ajust the resources according to your needs
+        resources:
+          requests:
+            memory: 0Mi
+            cpu: 0m
+          limits:
+            memory: 1Gi
+            cpu: 900m
+
+      containers:
+      - name: mysql-ghost-on-kubernetes
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 999
+
+        image: docker.io/mysql:8.4
+        imagePullPolicy: IfNotPresent # You can change this value according to your needs
+        envFrom:
+        - secretRef:
+            name: mysql-ghost-on-kubernetes-config
+        resources:
+          requests:
+            memory: 500Mi # You can change this value according to your needs
+            cpu: 100m # You can change this value according to your needs
+          limits:
+            memory: 1Gi # You can change this value according to your needs
+            cpu: 900m # You can change this value according to your needs
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+          name: mysqlgh
+        volumeMounts:
+        - name: mysql-ghost-on-kubernetes-volume
+          mountPath: /var/lib/mysql
+          subPath: mysql-empty-subdir
+          readOnly: false
+
+        - name: mysql-ghost-on-kubernetes-tmp
+          mountPath: /tmp
+          readOnly: false
+
+        - name: mysql-ghost-on-kubernetes-socket
+          mountPath: /var/run/mysqld
+          readOnly: false
+
+      automountServiceAccountToken: false
+
+      # Optional: Uncomment the following to specify node selectors
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: static
+      #               operator: In
+      #               values:
+      #                 - "true"
+
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
+      volumes:
+      - name: mysql-ghost-on-kubernetes-volume
+        persistentVolumeClaim:
+          claimName: mysql-ghost-on-kubernetes-pvc
+      - name: mysql-ghost-on-kubernetes-tmp
+        emptyDir:
+          sizeLimit: 128Mi
+      - name: mysql-ghost-on-kubernetes-socket
+        emptyDir:
+          sizeLimit: 128Mi

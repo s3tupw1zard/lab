@@ -1,0 +1,67 @@
+services:
+
+  postgres:
+    image: postgres:15.2-alpine
+    container_name: postgres
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./ztnet/postgres-data:/var/lib/postgresql/data
+    networks:
+      - ztnet
+
+  zerotier:
+    image: zyclonite/zerotier:1.14.0
+    hostname: zerotier
+    container_name: zerotier
+    restart: always
+    volumes:
+      - ./ztnet/zerotier:/var/lib/zerotier-one
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      - ztnet
+    ports:
+      - "9993:9993/udp"
+    env_file:
+      - .env
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+
+  ztnet:
+    image: sinamics/ztnet:latest
+    hostname: ztnet
+    container_name: ztnet
+    working_dir: /app
+    volumes:
+      - ./ztnet/zerotier:/var/lib/zerotier-one
+    restart: always
+    ports:
+      - 127.0.0.1:3000:3000
+    env_file:
+      - .env
+    networks:
+      - ztnet
+      - proxynet
+    links:
+      - postgres
+    depends_on:
+      - postgres
+      - zerotier
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+
+networks:
+  ztnet:
+    name: ztnet
+    external: true
+    
+  proxynet:
+    name: proxynet
+    external: true

@@ -1,0 +1,27 @@
+networks:
+  # Add network forgejo which can be set to external if this
+  # network was created using docker command.
+  forgejo:
+    external: false
+
+name: forgejo
+services:
+  server:
+    image: codeberg.org/forgejo/forgejo:7
+    container_name: forgejo
+    environment:
+    # User set to my home user with the UID & GID 1000
+      - USER_UID=1000
+      - USER_GID=1000
+    restart: always
+    networks:
+      - forgejo
+    volumes:
+      - ./forgejo:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+    # I've set this to bind on localhost only, because I'm using Nginx
+    # installed directly on my host to do a proxy pass to it.
+      - '127.0.0.1:3000:3000'
+      - '222:22'

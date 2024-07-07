@@ -2,6 +2,7 @@ networks:
   # Add network forgejo which can be set to external if this
   # network was created using docker command.
   forgejo:
+    name: forgejo-network
     external: false
 
 name: forgejo

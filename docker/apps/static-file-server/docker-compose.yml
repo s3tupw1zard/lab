@@ -1,0 +1,13 @@
+name: static-file-server
+services:
+  static-file-server:
+    image: halverneus/static-file-server:latest
+    container_name: static-file-server
+    environment:
+      - CORS=true
+      - PORT=8080
+      - FOLDER=/web
+    ports:
+      - 8080:8080
+    volumes:
+      - ./web:/web

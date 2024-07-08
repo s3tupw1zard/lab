@@ -1,0 +1,15 @@
+creation_rules:
+    - path_regex: \.yml$
+      key_groups:
+        - age:
+            - age1m73usnlg36pus5q5ana4yhqrxs4t2qnvpgjm92nrcgch5g2f735qumxt0a
+      encrypted_regex: ^(username|password|USERNAME|PASSWORD)$
+    - path_regex: \.*.env$
+      key_groups:
+        - age:
+            - age1m73usnlg36pus5q5ana4yhqrxs4t2qnvpgjm92nrcgch5g2f735qumxt0a
+      encrypted_regex: ^(username|password|USERNAME|PASSWORD)$
+    - path_regex: '.*\.(yml|ini|json|env|txt|py.enc|bin)$'
+      key_groups:
+        - age: 
+            - age1m73usnlg36pus5q5ana4yhqrxs4t2qnvpgjm92nrcgch5g2f735qumxt0a

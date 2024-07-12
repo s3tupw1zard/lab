@@ -1,0 +1,36 @@
+From 5d97b403416d2d4a07dbee7c51f8a347bdf444ac Mon Sep 17 00:00:00 2001
+From: RMartinOscar <40749467+RMartinOscar@users.noreply.github.com>
+Date: Tue, 25 Jun 2024 09:16:15 +0200
+Subject: [PATCH] Update Allocation fields to allow ipv4 and ipv6
+
+---
+ .../RelationManagers/AllocationsRelationManager.php             | 2 +-
+ app/Filament/Resources/ServerResource/Pages/CreateServer.php    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/app/Filament/Resources/NodeResource/RelationManagers/AllocationsRelationManager.php b/app/Filament/Resources/NodeResource/RelationManagers/AllocationsRelationManager.php
+index 97eb8d37d8..3308c22713 100644
+--- a/app/Filament/Resources/NodeResource/RelationManagers/AllocationsRelationManager.php
++++ b/app/Filament/Resources/NodeResource/RelationManagers/AllocationsRelationManager.php
+@@ -72,7 +72,7 @@ public function table(Table $table): Table
+                             ->datalist($this->getOwnerRecord()->ipAddresses())
+                             ->label('IP Address')
+                             ->inlineLabel()
+-                            ->ipv4()
++                            ->ip()
+                             ->helperText("Usually your machine's public IP unless you are port forwarding.")
+                             ->required(),
+                         Forms\Components\TextInput::make('allocation_alias')
+diff --git a/app/Filament/Resources/ServerResource/Pages/CreateServer.php b/app/Filament/Resources/ServerResource/Pages/CreateServer.php
+index 53a3fe2dee..99712c0a48 100644
+--- a/app/Filament/Resources/ServerResource/Pages/CreateServer.php
++++ b/app/Filament/Resources/ServerResource/Pages/CreateServer.php
+@@ -143,7 +143,7 @@ public function form(Form $form): Form
+                                         ->datalist(Node::find($get('node_id'))?->ipAddresses() ?? [])
+                                         ->label('IP Address')
+                                         ->inlineLabel()
+-                                        ->ipv4()
++                                        ->ip()
+                                         ->helperText("Usually your machine's public IP unless you are port forwarding.")
+                                         // ->selectablePlaceholder(false)
+                                         ->required(),

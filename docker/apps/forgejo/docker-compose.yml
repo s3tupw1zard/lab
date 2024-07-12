@@ -1,8 +1,5 @@
 networks:
-  # Add network forgejo which can be set to external if this
-  # network was created using docker command.
   forgejo:
-    name: forgejo-network
     external: false
 
 name: forgejo
@@ -11,7 +8,6 @@ services:
     image: codeberg.org/forgejo/forgejo:7
     container_name: forgejo
     environment:
-    # User set to my home user with the UID & GID 1000
       - USER_UID=1000
       - USER_GID=1000
     restart: always
@@ -22,7 +18,38 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     ports:
-    # I've set this to bind on localhost only, because I'm using Nginx
-    # installed directly on my host to do a proxy pass to it.
       - '127.0.0.1:3000:3000'
       - '222:22'
+
+  docker-in-docker:
+    image: docker:dind
+    container_name: 'docker_dind'
+    privileged: true
+    command: ['dockerd', '-H', 'tcp://0.0.0.0:2375', '--tls=false']
+    restart: 'unless-stopped'
+
+  runner:
+    restart: unless-stopped
+    links:
+      - docker-in-docker
+    depends_on:
+      docker-in-docker:
+        condition: service_started
+    container_name: 'runner'
+    image: code.forgejo.org/forgejo/runner:3.5.0
+    user: 1000:1000
+    command: forgejo-runner daemon
+    environment:
+      DOCKER_HOST: tcp://docker-in-docker:2375
+      CONFIG_FILE: /config.yaml
+      GITEA_INSTANCE_URL: https://git.example.com
+      GITEA_RUNNER_REGISTRATION_TOKEN: "<redacted>"
+      GITEA_RUNNER_NAME: forgejo-runner-1
+      GITEA_RUNNER_LABELS: "ubuntu-latest,ubuntu-22.04,ubuntu-20.04,ubuntu-18.04"
+    volumes:
+      - ./runner/config.yaml:/config.yaml
+      - ./runner/data:/data:rw
+      - ./runner/cache/:/cache
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "[::]:42263:42263"
